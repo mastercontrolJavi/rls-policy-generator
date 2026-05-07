@@ -1,6 +1,6 @@
 # RLS Policy Generator
 
-A visual builder for **Supabase Row Level Security** policies. Define your table, toggle access per role, and copy production-ready SQL — without typing a single `auth.uid()` by hand.
+A visual builder for **Supabase Row Level Security** policies. Define your table, toggle access per role, and copy production-ready SQL - without typing a single `auth.uid()` by hand.
 
 > **Live demo:** https://rls-policy-generator.vercel.app
 
