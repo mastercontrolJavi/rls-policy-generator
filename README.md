@@ -3,10 +3,8 @@
 A visual builder for **Supabase Row Level Security** policies. Define your table, toggle access per role, and copy production-ready SQL — without typing a single `auth.uid()` by hand.
 
 > **Live demo:** https://rls-policy-generator.vercel.app
-> _(replace with your URL after deploying)_
 
 ![Screenshot](./public/screenshot.png)
-_(drop a screenshot at `public/screenshot.png` — a 1600×900 PNG of the running app works well)_
 
 ## Why
 
