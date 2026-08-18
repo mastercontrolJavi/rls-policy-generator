@@ -1,27 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Download } from "lucide-react";
+import { AlertTriangle, Check, Copy, Download, FileCode2, X } from "lucide-react";
 import { tokenize } from "@/lib/syntax-highlighter";
+import type { Issue } from "@/lib/validation";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "./ui/empty-state";
 import { Panel } from "./ui/panel";
 
 interface Props {
   sql: string;
   tableName: string;
+  empty: boolean;
+  errors: Issue[];
 }
 
-export function SqlOutput({ sql, tableName }: Props) {
-  const [copied, setCopied] = useState(false);
+type CopyStatus = "idle" | "copied" | "failed";
+
+export function SqlOutput({ sql, tableName, empty, errors }: Props) {
+  const [copied, setCopied] = useState<CopyStatus>("idle");
+  const blocked = empty || errors.length > 0;
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(sql);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch (err) {
-      console.error("Copy failed", err);
+      setCopied("copied");
+    } catch {
+      // Clipboard access needs a secure context and can be denied.
+      setCopied("failed");
     }
+    window.setTimeout(() => setCopied("idle"), 1800);
   };
 
   const handleDownload = () => {
@@ -36,32 +44,92 @@ export function SqlOutput({ sql, tableName }: Props) {
     URL.revokeObjectURL(url);
   };
 
+  const subtitle = empty
+    ? "Nothing to generate"
+    : errors.length > 0
+      ? `${errors.length} ${errors.length === 1 ? "error" : "errors"}`
+      : "Live preview";
+
   return (
     <Panel
       title="SQL Output"
-      subtitle="Live preview"
+      subtitle={subtitle}
       action={
-        <div className="flex items-center gap-1">
-          <IconButton
-            onClick={handleCopy}
-            label={copied ? "Copied" : "Copy SQL"}
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-[#3ECF8E]" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </IconButton>
-          <IconButton onClick={handleDownload} label="Download .sql">
-            <Download className="h-3.5 w-3.5" />
-          </IconButton>
-        </div>
+        blocked ? null : (
+          <div className="flex items-center gap-1">
+            <IconButton
+              onClick={handleCopy}
+              label={
+                copied === "copied"
+                  ? "Copied"
+                  : copied === "failed"
+                    ? "Copy failed"
+                    : "Copy SQL"
+              }
+            >
+              {copied === "copied" ? (
+                <Check className="h-3.5 w-3.5 text-[#3ECF8E]" />
+              ) : copied === "failed" ? (
+                <X className="h-3.5 w-3.5 text-red-400" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </IconButton>
+            <IconButton onClick={handleDownload} label="Download .sql">
+              <Download className="h-3.5 w-3.5" />
+            </IconButton>
+          </div>
+        )
       }
     >
-      <div className="scrollbar-thin max-h-[calc(100vh-9rem)] overflow-auto bg-[#0a0a0b] p-4">
-        <HighlightedSql sql={sql} />
-      </div>
+      {empty ? (
+        <EmptyState
+          icon={<FileCode2 className="h-4 w-4" />}
+          title="No SQL yet"
+          body="Define a table on the left and the policies will appear here as you toggle access."
+        />
+      ) : errors.length > 0 ? (
+        <SqlErrors errors={errors} />
+      ) : (
+        <div className="scrollbar-thin max-h-[calc(100vh-9rem)] overflow-auto bg-[#0a0a0b] p-4">
+          <HighlightedSql sql={sql} />
+        </div>
+      )}
     </Panel>
+  );
+}
+
+/**
+ * Generation is withheld rather than emitting SQL that fails on paste. The
+ * whole point of the tool is catching this before it ships.
+ */
+function SqlErrors({ errors }: { errors: Issue[] }) {
+  return (
+    <div className="bg-[#0a0a0b] p-4">
+      <div className="flex items-start gap-2 rounded-md border border-red-500/25 bg-red-500/5 p-3">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" />
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-red-200">
+            Fix the schema to generate SQL
+          </p>
+          <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+            These names would not survive a paste into the SQL editor, so
+            nothing is generated yet.
+          </p>
+          <ul className="mt-2.5 space-y-1.5">
+            {errors.map((error, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-1.5 text-[11px] leading-relaxed text-red-300/90"
+              >
+                <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-red-400/70" />
+                <span>{error.message}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
   );
 }
 

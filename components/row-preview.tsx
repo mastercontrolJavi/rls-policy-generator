@@ -1,5 +1,6 @@
 "use client";
 
+import { Rows3 } from "lucide-react";
 import type { AccessCheck } from "@/lib/access";
 import { scopedRoleLabel } from "@/lib/access";
 import { detectRisks, isRisky } from "@/lib/risks";
@@ -11,6 +12,7 @@ import {
 import type { AccessRules, Operation, Role, Schema, Tenancy } from "@/lib/types";
 import { OPERATIONS, ROLES } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "./ui/empty-state";
 import { Panel } from "./ui/panel";
 
 interface Props {
@@ -57,9 +59,11 @@ export function RowPreview({ schema, rules, check, tenancy }: Props) {
   if (schema.columns.length === 0) {
     return (
       <Panel title="Row Preview" subtitle="Visual access map">
-        <div className="p-4 text-xs text-zinc-600">
-          Add columns to see sample rows.
-        </div>
+        <EmptyState
+          icon={<Rows3 className="h-4 w-4" />}
+          title="No rows to simulate"
+          body="Add columns to the schema and sample rows will appear here, showing what each role can do to them."
+        />
       </Panel>
     );
   }

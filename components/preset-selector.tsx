@@ -15,10 +15,10 @@ export function PresetSelector({
         onChange={(e) => {
           if (e.target.value) onSelect(e.target.value);
         }}
-        className="cursor-pointer appearance-none rounded-md border border-[#1f1f23] bg-[#111114] px-3 py-2 pr-8 text-xs text-zinc-200 transition hover:border-[#2a2a2e] focus:border-[#3ECF8E]/50 focus:outline-none"
+        className="w-[104px] cursor-pointer appearance-none truncate rounded-md border border-[#1f1f23] bg-[#111114] px-3 py-2 pr-8 text-xs text-zinc-200 transition hover:border-[#2a2a2e] focus:border-[#3ECF8E]/50 focus:outline-none sm:w-auto"
       >
         <option value="" disabled>
-          Load preset…
+          Preset…
         </option>
         {Object.entries(presetLabels).map(([key, label]) => (
           <option key={key} value={key}>
