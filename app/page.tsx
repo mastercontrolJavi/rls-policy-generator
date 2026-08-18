@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { AccessRules } from "@/components/access-rules";
 import { Header } from "@/components/header";
+import { Hero } from "@/components/hero";
 import { RowPreview } from "@/components/row-preview";
 import { SchemaBuilder } from "@/components/schema-builder";
 import { SqlOutput } from "@/components/sql-output";
@@ -41,7 +42,9 @@ export default function Home() {
     <div className="min-h-screen bg-[#0a0a0b]">
       <Header onPresetChange={handlePreset} />
       <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-6 sm:px-6">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <Hero />
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
           <section className="lg:col-span-4">
             <SchemaBuilder
               schema={state.schema}
@@ -62,7 +65,7 @@ export default function Home() {
             />
           </section>
 
-          <section className="lg:col-span-5">
+          <section className="lg:sticky lg:top-20 lg:col-span-5">
             <SqlOutput sql={sql} tableName={state.schema.tableName} />
           </section>
         </div>

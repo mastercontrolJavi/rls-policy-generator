@@ -58,7 +58,7 @@ export function SqlOutput({ sql, tableName }: Props) {
         </div>
       }
     >
-      <div className="scrollbar-thin max-h-[calc(100vh-180px)] overflow-auto bg-[#0a0a0b] p-4">
+      <div className="scrollbar-thin max-h-[calc(100vh-9rem)] overflow-auto bg-[#0a0a0b] p-4">
         <HighlightedSql sql={sql} />
       </div>
     </Panel>
