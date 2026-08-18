@@ -8,7 +8,8 @@ import { RowPreview } from "@/components/row-preview";
 import { SchemaBuilder } from "@/components/schema-builder";
 import { SqlOutput } from "@/components/sql-output";
 import { presets } from "@/lib/presets";
-import { detectOwnerColumn, generateSql } from "@/lib/sql-generator";
+import { resolveAccessCheck } from "@/lib/access";
+import { generateSql } from "@/lib/sql-generator";
 import type { AppState } from "@/lib/types";
 
 const initialState: AppState = presets.blog;
@@ -17,9 +18,9 @@ export default function Home() {
   const [state, setState] = useState<AppState>(initialState);
 
   const sql = useMemo(() => generateSql(state), [state]);
-  const ownerColumn = useMemo(
-    () => detectOwnerColumn(state.schema.columns),
-    [state.schema.columns]
+  const check = useMemo(
+    () => resolveAccessCheck(state.schema, state.tenancy),
+    [state.schema, state.tenancy]
   );
 
   const handlePreset = (key: string) => {
@@ -34,6 +35,7 @@ export default function Home() {
           authenticated: { ...presets[key].rules.authenticated },
           owner: { ...presets[key].rules.owner },
         },
+        tenancy: { ...presets[key].tenancy },
       });
     }
   };
@@ -55,13 +57,18 @@ export default function Home() {
           <section className="space-y-4 lg:col-span-3">
             <AccessRules
               rules={state.rules}
-              ownerColumn={ownerColumn}
+              check={check}
+              tenancy={state.tenancy}
               onChange={(rules) => setState((s) => ({ ...s, rules }))}
+              onTenancyModeChange={(mode) =>
+                setState((s) => ({ ...s, tenancy: { ...s.tenancy, mode } }))
+              }
             />
             <RowPreview
               schema={state.schema}
               rules={state.rules}
-              ownerColumn={ownerColumn}
+              check={check}
+              tenancy={state.tenancy}
             />
           </section>
 

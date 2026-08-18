@@ -22,6 +22,10 @@ const KEYWORDS = new Set([
   "NOT",
   "TRUE",
   "FALSE",
+  "FROM",
+  "WHERE",
+  "IN",
+  "EXISTS",
 ]);
 
 export type TokenType = "keyword" | "string" | "comment" | "punct" | "ident" | "ws";

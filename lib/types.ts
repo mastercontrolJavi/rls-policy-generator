@@ -42,7 +42,29 @@ export const OPERATIONS: Operation[] = ["select", "insert", "update", "delete"];
 
 export type AccessRules = Record<Role, Record<Operation, boolean>>;
 
+/**
+ * How the scoped role is resolved. "owner" matches auth.uid() against a
+ * column on the row. "org" matches the row's org against the caller's
+ * memberships through a join table.
+ */
+export type TenancyMode = "owner" | "org";
+
+export interface Tenancy {
+  mode: TenancyMode;
+  membershipTable: string;
+  membershipUserColumn: string;
+  membershipOrgColumn: string;
+}
+
+export const DEFAULT_TENANCY: Tenancy = {
+  mode: "owner",
+  membershipTable: "org_members",
+  membershipUserColumn: "user_id",
+  membershipOrgColumn: "org_id",
+};
+
 export interface AppState {
   schema: Schema;
   rules: AccessRules;
+  tenancy: Tenancy;
 }

@@ -1,18 +1,59 @@
 "use client";
 
-import { Eye, Pencil } from "lucide-react";
-import type { AccessRules, Schema } from "@/lib/types";
-import { generateSampleRows, SIM_USER_DISPLAY } from "@/lib/sample-data";
+import type { AccessCheck } from "@/lib/access";
+import { scopedRoleLabel } from "@/lib/access";
+import { detectRisks, isRisky } from "@/lib/risks";
+import {
+  generateSampleRows,
+  SIM_ORG_DISPLAY,
+  SIM_USER_DISPLAY,
+} from "@/lib/sample-data";
+import type { AccessRules, Operation, Role, Schema, Tenancy } from "@/lib/types";
+import { OPERATIONS, ROLES } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Panel } from "./ui/panel";
 
 interface Props {
   schema: Schema;
   rules: AccessRules;
-  ownerColumn: string | null;
+  check: AccessCheck;
+  tenancy: Tenancy;
 }
 
-export function RowPreview({ schema, rules, ownerColumn }: Props) {
+const OP_LABELS: Record<Operation, string> = {
+  select: "S",
+  insert: "I",
+  update: "U",
+  delete: "D",
+};
+
+/**
+ * What the simulated caller can do to this specific row under each role's
+ * policies. anon and authenticated policies use a `true` predicate, so they
+ * apply to every row. The scoped role only applies when the row passes its
+ * check.
+ */
+function accessFor(
+  role: Role,
+  rules: AccessRules,
+  inScope: boolean,
+  check: AccessCheck
+): Record<Operation, boolean> {
+  const granted = rules[role];
+  if (role !== "owner") return granted;
+
+  const reachable = check.kind !== "none" && inScope;
+  return {
+    select: granted.select && reachable,
+    insert: granted.insert && reachable,
+    update: granted.update && reachable,
+    delete: granted.delete && reachable,
+  };
+}
+
+export function RowPreview({ schema, rules, check, tenancy }: Props) {
+  const scopedLabel = scopedRoleLabel(tenancy);
+
   if (schema.columns.length === 0) {
     return (
       <Panel title="Row Preview" subtitle="Visual access map">
@@ -23,17 +64,19 @@ export function RowPreview({ schema, rules, ownerColumn }: Props) {
     );
   }
 
-  const rows = generateSampleRows(schema.columns);
+  const rows = generateSampleRows(schema.columns, check);
   const visibleCols = schema.columns.slice(0, 3);
+  const simulating =
+    check.kind === "org"
+      ? `member of org ${SIM_ORG_DISPLAY}`
+      : `auth.uid() = ${SIM_USER_DISPLAY}`;
 
   return (
     <Panel title="Row Preview" subtitle="Visual access map">
       <div className="p-4">
         <div className="mb-3 text-[11px] text-zinc-500">
           Simulating{" "}
-          <span className="font-mono text-[#3ECF8E]">
-            auth.uid() = {SIM_USER_DISPLAY}
-          </span>
+          <span className="font-mono text-[#3ECF8E]">{simulating}</span>
         </div>
 
         <div className="space-y-2">
@@ -42,17 +85,19 @@ export function RowPreview({ schema, rules, ownerColumn }: Props) {
               key={idx}
               cells={row.cells}
               visibleCols={visibleCols}
-              isOwned={row.isOwned}
+              inScope={row.inScope}
               rules={rules}
-              ownerColumn={ownerColumn}
+              check={check}
+              scopedLabel={scopedLabel}
             />
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-end gap-3 text-[10px] text-zinc-600">
-          <LegendDot label="visible" icon={<Eye className="h-2.5 w-2.5" />} />
-          <LegendDot label="editable" icon={<Pencil className="h-2.5 w-2.5" />} />
-        </div>
+        <p className="mt-3 text-[10px] leading-relaxed text-zinc-600">
+          S, I, U and D are SELECT, INSERT, UPDATE and DELETE on that row. A
+          signed in {scopedLabel} gets both the auth and {scopedLabel} policies,
+          since Postgres ORs policies for the same command.
+        </p>
       </div>
     </Panel>
   );
@@ -61,134 +106,111 @@ export function RowPreview({ schema, rules, ownerColumn }: Props) {
 interface RowCardProps {
   cells: Record<string, string>;
   visibleCols: { name: string }[];
-  isOwned: boolean;
+  inScope: boolean;
   rules: AccessRules;
-  ownerColumn: string | null;
+  check: AccessCheck;
+  scopedLabel: string;
 }
 
-function RowCard({ cells, visibleCols, isOwned, rules, ownerColumn }: RowCardProps) {
-  const anonRead = rules.anon.select;
-  const authRead = rules.authenticated.select;
-  const ownerRead = ownerColumn ? rules.owner.select && isOwned : false;
-
-  const anonWrite =
-    rules.anon.insert || rules.anon.update || rules.anon.delete;
-  const authWrite =
-    rules.authenticated.insert ||
-    rules.authenticated.update ||
-    rules.authenticated.delete;
-  const ownerWrite = ownerColumn
-    ? (rules.owner.insert || rules.owner.update || rules.owner.delete) &&
-      isOwned
-    : false;
+function RowCard({
+  cells,
+  visibleCols,
+  inScope,
+  rules,
+  check,
+  scopedLabel,
+}: RowCardProps) {
+  const risks = detectRisks(rules);
 
   return (
     <div
       className={cn(
         "rounded-md border bg-[#0a0a0b] p-2.5 transition",
-        isOwned ? "border-[#3ECF8E]/25" : "border-[#1f1f23]"
+        inScope ? "border-[#3ECF8E]/25" : "border-[#1f1f23]"
       )}
     >
-      <div className="space-y-0.5 font-mono text-[11px]">
-        {visibleCols.map((col) => (
-          <div key={col.name} className="flex items-center gap-2">
-            <span className="w-14 shrink-0 truncate text-zinc-600">
-              {col.name}
-            </span>
-            <span className="truncate text-zinc-300">{cells[col.name]}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-[#1f1f23] pt-2">
-        <RoleBadge
-          label="anon"
-          canRead={anonRead}
-          canWrite={anonWrite}
-          tone="zinc"
-        />
-        <RoleBadge
-          label="auth"
-          canRead={authRead}
-          canWrite={authWrite}
-          tone="blue"
-        />
-        <RoleBadge
-          label="owner"
-          canRead={ownerRead}
-          canWrite={ownerWrite}
-          tone="green"
-        />
-        {isOwned && (
-          <span className="ml-auto rounded bg-[#3ECF8E]/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[#3ECF8E]">
-            owned
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 space-y-0.5 font-mono text-[11px]">
+          {visibleCols.map((col) => (
+            <div key={col.name} className="flex items-center gap-2">
+              <span className="w-14 shrink-0 truncate text-zinc-600">
+                {col.name}
+              </span>
+              <span className="truncate text-zinc-300">{cells[col.name]}</span>
+            </div>
+          ))}
+        </div>
+        {inScope && check.kind !== "none" && (
+          <span className="shrink-0 rounded bg-[#3ECF8E]/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[#3ECF8E]">
+            {check.kind === "org" ? "in org" : "owned"}
           </span>
         )}
       </div>
+
+      <div className="mt-2 space-y-1 border-t border-[#1f1f23] pt-2">
+        {ROLES.map((role) => {
+          const access = accessFor(role, rules, inScope, check);
+          const label =
+            role === "owner"
+              ? scopedLabel
+              : role === "authenticated"
+                ? "auth"
+                : role;
+          return (
+            <div key={role} className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "w-12 shrink-0 truncate font-mono text-[10px]",
+                  role === "owner" ? "text-[#3ECF8E]/80" : "text-zinc-500"
+                )}
+              >
+                {label}
+              </span>
+              <div className="flex flex-1 gap-1">
+                {OPERATIONS.map((op) => (
+                  <OpChip
+                    key={op}
+                    label={OP_LABELS[op]}
+                    allowed={access[op]}
+                    risky={access[op] && isRisky(risks, role, op)}
+                    title={`${label} ${op.toUpperCase()}: ${
+                      access[op] ? "allowed" : "denied"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function RoleBadge({
+function OpChip({
   label,
-  canRead,
-  canWrite,
-  tone,
+  allowed,
+  risky,
+  title,
 }: {
   label: string;
-  canRead: boolean;
-  canWrite: boolean;
-  tone: "zinc" | "blue" | "green";
+  allowed: boolean;
+  risky: boolean;
+  title: string;
 }) {
-  const dim = !canRead && !canWrite;
-  const ringClass = {
-    zinc: "ring-zinc-500/30",
-    blue: "ring-blue-400/30",
-    green: "ring-[#3ECF8E]/40",
-  }[tone];
-  const labelColor = {
-    zinc: "text-zinc-300",
-    blue: "text-blue-300",
-    green: "text-[#3ECF8E]",
-  }[tone];
-
   return (
-    <div
+    <span
+      title={title}
       className={cn(
-        "flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[9.5px] ring-1 transition",
-        dim
-          ? "text-zinc-700 ring-[#1f1f23]"
-          : `${labelColor} ${ringClass}`
+        "flex h-4 flex-1 items-center justify-center rounded-sm border font-mono text-[9px] font-semibold",
+        allowed &&
+          !risky &&
+          "border-[#3ECF8E]/35 bg-[#3ECF8E]/10 text-[#3ECF8E]",
+        allowed && risky && "border-amber-500/45 bg-amber-500/10 text-amber-300",
+        !allowed && "border-[#1f1f23] bg-transparent text-zinc-700"
       )}
     >
-      <span>{label}</span>
-      <Eye
-        className={cn(
-          "h-2.5 w-2.5",
-          canRead ? "opacity-100" : "opacity-20"
-        )}
-      />
-      <Pencil
-        className={cn(
-          "h-2.5 w-2.5",
-          canWrite ? "opacity-100" : "opacity-20"
-        )}
-      />
-    </div>
-  );
-}
-
-function LegendDot({
-  label,
-  icon,
-}: {
-  label: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      <span className="text-zinc-400">{icon}</span>
-      <span>{label}</span>
-    </div>
+      {label}
+    </span>
   );
 }

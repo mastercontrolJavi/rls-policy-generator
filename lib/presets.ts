@@ -1,4 +1,5 @@
 import type { AppState } from "./types";
+import { DEFAULT_TENANCY } from "./types";
 
 export const presets: Record<string, AppState> = {
   blog: {
@@ -17,6 +18,7 @@ export const presets: Record<string, AppState> = {
       authenticated: { select: true, insert: false, update: false, delete: false },
       owner: { select: true, insert: true, update: true, delete: true },
     },
+    tenancy: DEFAULT_TENANCY,
   },
   saas: {
     schema: {
@@ -34,6 +36,7 @@ export const presets: Record<string, AppState> = {
       authenticated: { select: false, insert: false, update: false, delete: false },
       owner: { select: true, insert: true, update: true, delete: true },
     },
+    tenancy: DEFAULT_TENANCY,
   },
   ecommerce: {
     schema: {
@@ -52,6 +55,7 @@ export const presets: Record<string, AppState> = {
       authenticated: { select: true, insert: false, update: false, delete: false },
       owner: { select: true, insert: true, update: true, delete: true },
     },
+    tenancy: DEFAULT_TENANCY,
   },
   publicReadOnly: {
     schema: {
@@ -67,6 +71,7 @@ export const presets: Record<string, AppState> = {
       authenticated: { select: true, insert: false, update: false, delete: false },
       owner: { select: false, insert: false, update: false, delete: false },
     },
+    tenancy: DEFAULT_TENANCY,
   },
   privateNotes: {
     schema: {
@@ -84,6 +89,30 @@ export const presets: Record<string, AppState> = {
       authenticated: { select: false, insert: false, update: false, delete: false },
       owner: { select: true, insert: true, update: true, delete: true },
     },
+    tenancy: DEFAULT_TENANCY,
+  },
+  orgScoped: {
+    schema: {
+      tableName: "projects",
+      columns: [
+        { id: "o1", name: "id", type: "uuid" },
+        { id: "o2", name: "name", type: "text" },
+        { id: "o3", name: "org_id", type: "uuid" },
+        { id: "o4", name: "created_by", type: "uuid" },
+        { id: "o5", name: "created_at", type: "timestamptz" },
+      ],
+    },
+    rules: {
+      anon: { select: false, insert: false, update: false, delete: false },
+      authenticated: { select: false, insert: false, update: false, delete: false },
+      owner: { select: true, insert: true, update: true, delete: true },
+    },
+    tenancy: {
+      mode: "org",
+      membershipTable: "org_members",
+      membershipUserColumn: "user_id",
+      membershipOrgColumn: "org_id",
+    },
   },
 };
 
@@ -93,4 +122,5 @@ export const presetLabels: Record<string, string> = {
   ecommerce: "Ecommerce",
   publicReadOnly: "Public Read-Only",
   privateNotes: "Private Notes",
+  orgScoped: "Multi-Tenant SaaS",
 };
