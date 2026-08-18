@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AccessRules } from "@/components/access-rules";
 import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
@@ -11,11 +11,33 @@ import { presets } from "@/lib/presets";
 import { resolveAccessCheck } from "@/lib/access";
 import { generateSql } from "@/lib/sql-generator";
 import type { AppState } from "@/lib/types";
+import { decodeState, encodeState } from "@/lib/url-state";
 
 const initialState: AppState = presets.blog;
 
 export default function Home() {
   const [state, setState] = useState<AppState>(initialState);
+  const [hydrated, setHydrated] = useState(false);
+
+  // A shared link wins over the default preset. Read after mount so the
+  // statically prerendered markup and the first client render agree.
+  useEffect(() => {
+    const fromUrl = decodeState(window.location.search);
+    if (fromUrl) setState(fromUrl);
+    setHydrated(true);
+  }, []);
+
+  // Mirror state back into the URL. replaceState keeps a session of edits
+  // from filling the back button, and the delay keeps typing off the
+  // browser's history-write rate limit.
+  useEffect(() => {
+    if (!hydrated) return;
+    const timer = window.setTimeout(() => {
+      const { pathname } = window.location;
+      window.history.replaceState(null, "", `${pathname}?${encodeState(state)}`);
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [state, hydrated]);
 
   const sql = useMemo(() => generateSql(state), [state]);
   const check = useMemo(
@@ -42,7 +64,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0b]">
-      <Header onPresetChange={handlePreset} />
+      <Header state={state} onPresetChange={handlePreset} />
       <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-6 sm:px-6">
         <Hero />
 
