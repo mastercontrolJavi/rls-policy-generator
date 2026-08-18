@@ -1,13 +1,16 @@
 "use client";
 
 import { Database } from "lucide-react";
+import type { AppState } from "@/lib/types";
 import { PresetSelector } from "./preset-selector";
+import { ShareButton } from "./share-button";
 
 interface HeaderProps {
+  state: AppState;
   onPresetChange: (key: string) => void;
 }
 
-export function Header({ onPresetChange }: HeaderProps) {
+export function Header({ state, onPresetChange }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-[#1f1f23] bg-[#0a0a0b]/85 backdrop-blur">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-4 sm:px-6">
@@ -24,7 +27,8 @@ export function Header({ onPresetChange }: HeaderProps) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2">
+          <ShareButton state={state} />
           <PresetSelector onSelect={onPresetChange} />
         </div>
       </div>
