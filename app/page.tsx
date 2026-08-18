@@ -12,6 +12,8 @@ import { resolveAccessCheck } from "@/lib/access";
 import { generateSql } from "@/lib/sql-generator";
 import type { AppState } from "@/lib/types";
 import { decodeState, encodeState } from "@/lib/url-state";
+import { errorsOf, isSchemaEmpty, validateSchema } from "@/lib/validation";
+import { PanelSkeleton } from "@/components/ui/skeleton";
 
 const initialState: AppState = presets.blog;
 
@@ -38,6 +40,10 @@ export default function Home() {
     }, 200);
     return () => window.clearTimeout(timer);
   }, [state, hydrated]);
+
+  const issues = useMemo(() => validateSchema(state.schema), [state.schema]);
+  const errors = useMemo(() => errorsOf(issues), [issues]);
+  const schemaEmpty = useMemo(() => isSchemaEmpty(state.schema), [state.schema]);
 
   const sql = useMemo(() => generateSql(state), [state]);
   const check = useMemo(
@@ -68,37 +74,65 @@ export default function Home() {
       <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-6 sm:px-6">
         <Hero />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
-          <section className="lg:col-span-4">
-            <SchemaBuilder
-              schema={state.schema}
-              onChange={(schema) => setState((s) => ({ ...s, schema }))}
-            />
-          </section>
+        {!hydrated ? (
+          <ToolSkeleton />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
+            <section className="lg:col-span-4">
+              <SchemaBuilder
+                schema={state.schema}
+                issues={issues}
+                onChange={(schema) => setState((s) => ({ ...s, schema }))}
+              />
+            </section>
 
-          <section className="space-y-4 lg:col-span-3">
-            <AccessRules
-              rules={state.rules}
-              check={check}
-              tenancy={state.tenancy}
-              onChange={(rules) => setState((s) => ({ ...s, rules }))}
-              onTenancyModeChange={(mode) =>
-                setState((s) => ({ ...s, tenancy: { ...s.tenancy, mode } }))
-              }
-            />
-            <RowPreview
-              schema={state.schema}
-              rules={state.rules}
-              check={check}
-              tenancy={state.tenancy}
-            />
-          </section>
+            <section className="space-y-4 lg:col-span-3">
+              <AccessRules
+                rules={state.rules}
+                check={check}
+                tenancy={state.tenancy}
+                onChange={(rules) => setState((s) => ({ ...s, rules }))}
+                onTenancyModeChange={(mode) =>
+                  setState((s) => ({ ...s, tenancy: { ...s.tenancy, mode } }))
+                }
+              />
+              <RowPreview
+                schema={state.schema}
+                rules={state.rules}
+                check={check}
+                tenancy={state.tenancy}
+              />
+            </section>
 
-          <section className="lg:sticky lg:top-20 lg:col-span-5">
-            <SqlOutput sql={sql} tableName={state.schema.tableName} />
-          </section>
-        </div>
+            <section className="lg:sticky lg:top-20 lg:col-span-5">
+              <SqlOutput
+                sql={sql}
+                tableName={state.schema.tableName}
+                empty={schemaEmpty}
+                errors={errors}
+              />
+            </section>
+          </div>
+        )}
       </main>
+    </div>
+  );
+}
+
+/** Mirrors the real grid so resolving state from the URL does not shift layout. */
+function ToolSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
+      <section className="lg:col-span-4">
+        <PanelSkeleton title="Schema" rows={6} />
+      </section>
+      <section className="space-y-4 lg:col-span-3">
+        <PanelSkeleton title="Access Rules" rows={4} />
+        <PanelSkeleton title="Row Preview" rows={3} />
+      </section>
+      <section className="lg:col-span-5">
+        <PanelSkeleton title="SQL Output" rows={8} />
+      </section>
     </div>
   );
 }
