@@ -68,7 +68,7 @@ export function SchemaBuilder({ schema, issues, onChange }: Props) {
           action={
             <button
               onClick={startFromScratch}
-              className="flex items-center gap-2 rounded-md border border-[#1f1f23] bg-[#0a0a0b] px-3 py-2 text-xs text-zinc-300 transition hover:border-[#3ECF8E]/30 hover:text-[#3ECF8E]"
+              className="sunken flex items-center gap-2 rounded-lg border border-[#1f1f23] px-3 py-2 text-xs text-zinc-300 transition hover:border-[#3ECF8E]/35 hover:text-[#3ECF8E]"
             >
               <Plus className="h-3.5 w-3.5" />
               Start a table
@@ -85,7 +85,7 @@ export function SchemaBuilder({ schema, issues, onChange }: Props) {
         <div>
           <label
             htmlFor="table-name"
-            className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-zinc-500"
+            className="mb-1.5 block font-mono text-[9.5px] uppercase tracking-[0.14em] text-zinc-600"
           >
             Table name
           </label>
@@ -96,7 +96,7 @@ export function SchemaBuilder({ schema, issues, onChange }: Props) {
             placeholder="posts"
             aria-invalid={tableLevel === "error"}
             className={cn(
-              "w-full rounded-md border bg-[#0a0a0b] px-3 py-2 font-mono text-sm text-zinc-100 outline-none transition placeholder:text-zinc-600",
+              "sunken w-full rounded-lg border px-3 py-2 font-mono text-sm text-zinc-100 outline-none transition placeholder:text-zinc-600",
               tableLevel === "error"
                 ? "border-red-500/50 focus:border-red-500/70"
                 : tableLevel === "warning"
@@ -109,7 +109,7 @@ export function SchemaBuilder({ schema, issues, onChange }: Props) {
 
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <label className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+            <label className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-zinc-600">
               Columns
             </label>
             <span className="text-[10px] text-zinc-600">
@@ -137,7 +137,7 @@ export function SchemaBuilder({ schema, issues, onChange }: Props) {
 
           <button
             onClick={addColumn}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-[#1f1f23] bg-[#0a0a0b] px-3 py-2 text-xs text-zinc-400 transition hover:border-[#3ECF8E]/30 hover:text-[#3ECF8E]"
+            className="sunken mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-[#1f1f23] px-3 py-2 text-xs text-zinc-400 transition hover:border-[#3ECF8E]/35 hover:text-[#3ECF8E]"
           >
             <Plus className="h-3.5 w-3.5" />
             Add column
@@ -185,7 +185,7 @@ function ColumnRow({
     <div>
       <div
         className={cn(
-          "group flex items-center gap-1.5 rounded-md border bg-[#0a0a0b] px-2 py-1.5 transition",
+          "sunken group flex items-center gap-1.5 rounded-lg border px-2 py-1.5 transition",
           level === "error"
             ? "border-red-500/50 focus-within:border-red-500/70"
             : level === "warning"

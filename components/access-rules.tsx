@@ -55,7 +55,7 @@ export function AccessRules({
   return (
     <Panel title="Access Rules" subtitle="Who can do what">
       <div className="p-4">
-        <div className="mb-2 grid grid-cols-[76px_repeat(4,1fr)] gap-1.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+        <div className="mb-2 grid grid-cols-[76px_repeat(4,1fr)] gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-zinc-600">
           <div></div>
           {OPERATIONS.map((op) => (
             <div key={op} className="text-center" title={op}>
@@ -110,7 +110,7 @@ export function AccessRules({
             {risks.map((risk) => (
               <li
                 key={`${risk.role}-${risk.op}`}
-                className="flex items-start gap-2 rounded-md border border-amber-500/20 bg-amber-500/5 p-2 text-[11px] leading-relaxed text-amber-300/90"
+                className="reveal flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/[0.07] p-2 text-[11px] leading-relaxed text-amber-300/90"
               >
                 <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
                 <span>{risk.message}</span>
@@ -119,9 +119,9 @@ export function AccessRules({
           </ul>
         )}
 
-        <div className="mt-3 space-y-2 rounded-md border border-[#1f1f23] bg-[#0a0a0b] p-2.5">
+        <div className="sunken mt-3 space-y-2 rounded-lg border border-[#1f1f23] p-2.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-zinc-600">
               Row scope
             </span>
             <div className="flex items-center gap-1">
@@ -212,16 +212,30 @@ function ToggleCell({
       title={title}
       aria-pressed={on}
       className={cn(
-        "flex h-9 items-center justify-center rounded-md border font-mono text-xs font-semibold transition",
-        on && !risky && "border-[#3ECF8E]/40 bg-[#3ECF8E]/10 text-[#3ECF8E]",
-        on && risky && "border-amber-500/50 bg-amber-500/10 text-amber-300",
+        "relative flex h-9 items-center justify-center rounded-md border font-mono text-xs font-semibold",
+        "transition-all duration-200 ease-out active:scale-[0.94]",
+        on &&
+          !risky &&
+          "lit-accent border-transparent bg-[#3ECF8E]/[0.14] text-[#3ECF8E]",
+        on &&
+          risky &&
+          "lit-amber border-transparent bg-amber-500/[0.14] text-amber-300",
         !on &&
-          "border-[#1f1f23] bg-[#0a0a0b] text-zinc-700 hover:border-[#2a2a2e] hover:text-zinc-500",
+          "sunken border-[#1f1f23] text-zinc-700 hover:border-[#2c2c34] hover:text-zinc-500",
         disabled &&
-          "cursor-not-allowed opacity-30 hover:border-[#1f1f23] hover:text-zinc-700"
+          "cursor-not-allowed opacity-25 active:scale-100 hover:border-[#1f1f23] hover:text-zinc-700"
       )}
     >
-      {label}
+      {on && !disabled && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute inset-0 rounded-md opacity-60 blur-[6px]",
+            risky ? "bg-amber-500/25" : "bg-[#3ECF8E]/25"
+          )}
+        />
+      )}
+      <span className="relative">{label}</span>
     </button>
   );
 }

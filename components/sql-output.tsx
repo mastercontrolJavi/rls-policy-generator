@@ -20,6 +20,7 @@ type CopyStatus = "idle" | "copied" | "failed";
 export function SqlOutput({ sql, tableName, empty, errors }: Props) {
   const [copied, setCopied] = useState<CopyStatus>("idle");
   const blocked = empty || errors.length > 0;
+  const lineCount = sql.split("\n").length;
 
   const handleCopy = async () => {
     try {
@@ -54,6 +55,7 @@ export function SqlOutput({ sql, tableName, empty, errors }: Props) {
     <Panel
       title="SQL Output"
       subtitle={subtitle}
+      primary={!blocked}
       action={
         blocked ? null : (
           <div className="flex items-center gap-1">
@@ -91,8 +93,28 @@ export function SqlOutput({ sql, tableName, empty, errors }: Props) {
       ) : errors.length > 0 ? (
         <SqlErrors errors={errors} />
       ) : (
-        <div className="scrollbar-thin max-h-[calc(100vh-9rem)] overflow-auto bg-[#0a0a0b] p-4">
-          <HighlightedSql sql={sql} />
+        <div className="relative">
+          <div className="flex items-center gap-2 border-b border-[#1f1f23] bg-[#0c0c0f] px-4 py-1.5">
+            <span className="flex gap-1" aria-hidden="true">
+              <span className="h-2 w-2 rounded-full bg-[#2c2c34]" />
+              <span className="h-2 w-2 rounded-full bg-[#2c2c34]" />
+              <span className="h-2 w-2 rounded-full bg-[#2c2c34]" />
+            </span>
+            <span className="truncate font-mono text-[10px] text-zinc-600">
+              {(tableName || "policies").trim()}_policies.sql
+            </span>
+            <span className="ml-auto font-mono text-[10px] text-zinc-700">
+              {lineCount} {lineCount === 1 ? "line" : "lines"}
+            </span>
+          </div>
+          <div className="scrollbar-thin max-h-[calc(100vh-11.5rem)] overflow-auto bg-[#070709] p-4">
+            <HighlightedSql sql={sql} />
+          </div>
+          {/* Light pooling at the top of the well. */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-7 h-16 bg-gradient-to-b from-[#3ECF8E]/[0.045] to-transparent"
+          />
         </div>
       )}
     </Panel>
@@ -105,8 +127,8 @@ export function SqlOutput({ sql, tableName, empty, errors }: Props) {
  */
 function SqlErrors({ errors }: { errors: Issue[] }) {
   return (
-    <div className="bg-[#0a0a0b] p-4">
-      <div className="flex items-start gap-2 rounded-md border border-red-500/25 bg-red-500/5 p-3">
+    <div className="bg-[#070709] p-4">
+      <div className="reveal flex items-start gap-2 rounded-lg border border-red-500/25 bg-red-500/[0.07] p-3">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" />
         <div className="min-w-0">
           <p className="text-xs font-medium text-red-200">

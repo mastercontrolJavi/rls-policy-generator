@@ -45,16 +45,31 @@ export function Hero() {
   };
 
   return (
-    <section className="mb-4">
-      <p className="max-w-3xl text-[13px] leading-relaxed text-zinc-400 sm:text-sm">
-        RLS policies are easy to misconfigure and hard to audit visually.{" "}
-        <span className="text-zinc-200">
-          This makes both visible before you ship.
+    <section className="reveal mb-5">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="h-px w-5 bg-gradient-to-r from-[#3ECF8E] to-transparent" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#3ECF8E]/80">
+          Postgres row level security
         </span>
+      </div>
+
+      <h2 className="max-w-[46ch] text-balance text-[21px] font-medium leading-[1.22] tracking-[-0.02em] text-zinc-100 sm:text-[26px]">
+        RLS policies are easy to misconfigure and{" "}
+        <span className="relative whitespace-nowrap text-zinc-500">
+          hard to audit visually
+          <span
+            aria-hidden="true"
+            className="absolute -bottom-0.5 left-0 h-px w-full bg-gradient-to-r from-[#3ECF8E]/50 to-transparent"
+          />
+        </span>
+        .
+      </h2>
+      <p className="mt-2 max-w-[52ch] text-[13px] leading-relaxed text-zinc-500">
+        This makes both visible before you ship.
       </p>
 
       {hydrated && !dismissed && (
-        <div className="mt-3 overflow-hidden rounded-lg border border-[#1f1f23] bg-[#111114]">
+        <div className="panel-surface mt-4 overflow-hidden rounded-lg border border-[#1f1f23]">
           <div className="flex items-center gap-2 px-3 py-2">
             <button
               onClick={() => setExpanded((v) => !v)}
@@ -64,14 +79,14 @@ export function Hero() {
             >
               <ChevronDown
                 className={cn(
-                  "h-3.5 w-3.5 shrink-0 text-zinc-500 transition-transform",
+                  "h-3.5 w-3.5 shrink-0 text-zinc-500 transition-transform duration-300",
                   expanded && "rotate-180"
                 )}
               />
-              <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-400 transition group-hover:text-zinc-200">
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400 transition group-hover:text-zinc-200">
                 How to use
               </span>
-              <span className="truncate text-[11px] text-zinc-600">
+              <span className="truncate font-mono text-[10px] text-zinc-600">
                 3 steps
               </span>
             </button>
@@ -79,7 +94,7 @@ export function Hero() {
               onClick={dismiss}
               aria-label="Dismiss how to use"
               title="Dismiss"
-              className="shrink-0 rounded p-1 text-zinc-600 transition hover:bg-[#0a0a0b] hover:text-zinc-300"
+              className="shrink-0 rounded p-1 text-zinc-600 transition hover:bg-white/5 hover:text-zinc-300"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -93,9 +108,10 @@ export function Hero() {
               {STEPS.map((step, i) => (
                 <li
                   key={step.title}
-                  className="flex gap-2.5 rounded-md border border-[#1f1f23] bg-[#0a0a0b] p-2.5"
+                  className="reveal sunken flex gap-2.5 rounded-lg border border-[#1f1f23] p-2.5"
+                  style={{ ["--i" as string]: i }}
                 >
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#3ECF8E]/10 font-mono text-[10px] text-[#3ECF8E] ring-1 ring-[#3ECF8E]/20">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-[#3ECF8E]/25 bg-[#3ECF8E]/10 font-mono text-[10px] text-[#3ECF8E]">
                     {i + 1}
                   </span>
                   <div className="min-w-0">

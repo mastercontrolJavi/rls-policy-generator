@@ -129,10 +129,17 @@ function RowCard({
   return (
     <div
       className={cn(
-        "rounded-md border bg-[#0a0a0b] p-2.5 transition",
+        "sunken relative overflow-hidden rounded-lg border p-2.5 transition-colors duration-300",
         inScope ? "border-[#3ECF8E]/25" : "border-[#1f1f23]"
       )}
     >
+      {inScope && check.kind !== "none" && (
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-[#3ECF8E]/70 to-transparent"
+        />
+      )}
+
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5 font-mono text-[11px]">
           {visibleCols.map((col) => (
@@ -145,7 +152,7 @@ function RowCard({
           ))}
         </div>
         {inScope && check.kind !== "none" && (
-          <span className="shrink-0 rounded bg-[#3ECF8E]/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[#3ECF8E]">
+          <span className="shrink-0 rounded border border-[#3ECF8E]/25 bg-[#3ECF8E]/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[#3ECF8E]">
             {check.kind === "org" ? "in org" : "owned"}
           </span>
         )}
@@ -206,11 +213,14 @@ function OpChip({
     <span
       title={title}
       className={cn(
-        "flex h-4 flex-1 items-center justify-center rounded-sm border font-mono text-[9px] font-semibold",
+        "flex h-4 flex-1 items-center justify-center rounded border font-mono text-[9px] font-semibold",
+        "transition-all duration-300",
         allowed &&
           !risky &&
-          "border-[#3ECF8E]/35 bg-[#3ECF8E]/10 text-[#3ECF8E]",
-        allowed && risky && "border-amber-500/45 bg-amber-500/10 text-amber-300",
+          "border-[#3ECF8E]/40 bg-[#3ECF8E]/[0.13] text-[#3ECF8E] shadow-[0_0_10px_-3px_rgba(62,207,142,0.6)]",
+        allowed &&
+          risky &&
+          "border-amber-500/50 bg-amber-500/[0.13] text-amber-300 shadow-[0_0_10px_-3px_rgba(245,158,11,0.6)]",
         !allowed && "border-[#1f1f23] bg-transparent text-zinc-700"
       )}
     >

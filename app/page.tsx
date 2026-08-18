@@ -69,7 +69,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b]">
+    <div className="relative z-10 min-h-screen">
       <Header state={state} onPresetChange={handlePreset} />
       <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-6 sm:px-6">
         <Hero />
@@ -78,7 +78,7 @@ export default function Home() {
           <ToolSkeleton />
         ) : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
-            <section className="lg:col-span-4">
+            <section className="reveal lg:col-span-4" style={{ ["--i" as string]: 0 }}>
               <SchemaBuilder
                 schema={state.schema}
                 issues={issues}
@@ -86,7 +86,7 @@ export default function Home() {
               />
             </section>
 
-            <section className="space-y-4 lg:col-span-3">
+            <section className="reveal space-y-4 lg:col-span-3" style={{ ["--i" as string]: 1 }}>
               <AccessRules
                 rules={state.rules}
                 check={check}
@@ -104,7 +104,7 @@ export default function Home() {
               />
             </section>
 
-            <section className="lg:sticky lg:top-20 lg:col-span-5">
+            <section className="reveal lg:sticky lg:top-20 lg:col-span-5" style={{ ["--i" as string]: 2 }}>
               <SqlOutput
                 sql={sql}
                 tableName={state.schema.tableName}
