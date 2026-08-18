@@ -1,20 +1,54 @@
+import { predicateLines, resolveAccessCheck, scopedRoleLabel } from "./access";
+import type { AccessCheck } from "./access";
+import { describePolicy } from "./annotations";
+import { detectRisks } from "./risks";
+import type { Risk } from "./risks";
 import type { AppState, Operation, Role } from "./types";
 import { OPERATIONS, ROLES } from "./types";
 
-const OWNER_CANDIDATES = ["user_id", "owner_id", "created_by"];
 
-export function detectOwnerColumn(
-  columns: { name: string }[]
-): string | null {
-  for (const candidate of OWNER_CANDIDATES) {
-    if (columns.find((c) => c.name === candidate)) return candidate;
+export interface GeneratedPolicy {
+  role: Role;
+  op: Operation;
+  name: string;
+  /** Plain-English sentence describing what this policy permits. */
+  annotation: string;
+  /** SQL lines for the policy, comments included. */
+  lines: string[];
+}
+
+export function generatePolicies(state: AppState): GeneratedPolicy[] {
+  const tableName = tableNameOf(state);
+  const check = resolveAccessCheck(state.schema, state.tenancy);
+  const risks = detectRisks(state.rules);
+  const scopedLabel = scopedRoleLabel(state.tenancy);
+
+  const policies: GeneratedPolicy[] = [];
+  for (const role of ROLES) {
+    for (const op of OPERATIONS) {
+      if (!state.rules[role][op]) continue;
+      // The scoped role cannot produce a policy without a column to check.
+      if (role === "owner" && check.kind === "none") continue;
+
+      const label = role === "owner" ? scopedLabel : role;
+      const name = `${label}_${op}_${tableName}`;
+      const annotation = describePolicy(role, op, tableName, check);
+      policies.push({
+        role,
+        op,
+        name,
+        annotation,
+        lines: renderPolicy(tableName, role, op, name, check, annotation, risks),
+      });
+    }
   }
-  return null;
+  return policies;
 }
 
 export function generateSql(state: AppState): string {
-  const tableName = (state.schema.tableName || "my_table").trim();
-  const ownerColumn = detectOwnerColumn(state.schema.columns);
+  const tableName = tableNameOf(state);
+  const check = resolveAccessCheck(state.schema, state.tenancy);
+  const policies = generatePolicies(state);
 
   const lines: string[] = [];
   lines.push(`-- RLS Policy Generator`);
@@ -31,75 +65,91 @@ export function generateSql(state: AppState): string {
     lines.push("");
   }
 
+  if (check.kind === "org") {
+    lines.push(
+      `-- Assumes ${check.membershipTable}(${check.membershipUserColumn}, ${check.membershipOrgColumn}) already exists`
+    );
+    lines.push(`-- and maps each user to the orgs they belong to.`);
+    lines.push("");
+  }
+
   lines.push(`-- Enable Row Level Security`);
   lines.push(`ALTER TABLE ${tableName} ENABLE ROW LEVEL SECURITY;`);
   lines.push("");
 
-  let policiesGenerated = 0;
-  for (const role of ROLES) {
-    for (const op of OPERATIONS) {
-      if (!state.rules[role][op]) continue;
-      const block = renderPolicy(tableName, role, op, ownerColumn);
-      lines.push(...block);
-      lines.push("");
-      policiesGenerated++;
+  for (const policy of policies) {
+    lines.push(...policy.lines);
+    lines.push("");
+  }
+
+  if (policies.length === 0) {
+    lines.push("-- No policies enabled. Toggle access rules to generate them.");
+    if (check.kind === "none" && hasScopedRuleEnabled(state)) {
+      lines.push(
+        `-- The scoped role is on but no matching column was found on ${tableName}.`
+      );
     }
   }
 
-  if (policiesGenerated === 0) {
-    lines.push("-- No policies enabled. Toggle access rules to generate them.");
-  }
-
   return lines.join("\n");
+}
+
+function tableNameOf(state: AppState): string {
+  return (state.schema.tableName || "my_table").trim();
+}
+
+function hasScopedRuleEnabled(state: AppState): boolean {
+  return OPERATIONS.some((op) => state.rules.owner[op]);
 }
 
 function renderPolicy(
   tableName: string,
   role: Role,
   op: Operation,
-  ownerColumn: string | null
+  policyName: string,
+  check: AccessCheck,
+  annotation: string,
+  risks: Risk[]
 ): string[] {
   const opUpper = op.toUpperCase();
-  const policyName = `${role}_${op}_${tableName}`;
   const targetRole = role === "owner" ? "authenticated" : role;
   const out: string[] = [];
 
-  if (role === "owner") {
-    if (!ownerColumn) {
-      out.push(`-- owner ${opUpper}: skipped (no owner column found)`);
-      out.push(
-        `-- Add a user_id, owner_id, or created_by column to enable owner policies.`
-      );
-      return out;
-    }
-
-    const ownerCheck = `auth.uid() = ${ownerColumn}`;
-    out.push(`-- owner can ${opUpper} their own rows`);
-    out.push(`CREATE POLICY "${policyName}" ON ${tableName}`);
-    out.push(`  FOR ${opUpper} TO ${targetRole}`);
-
-    if (op === "insert") {
-      out.push(`  WITH CHECK (${ownerCheck});`);
-    } else if (op === "update") {
-      out.push(`  USING (${ownerCheck})`);
-      out.push(`  WITH CHECK (${ownerCheck});`);
-    } else {
-      out.push(`  USING (${ownerCheck});`);
-    }
-    return out;
+  out.push(`-- ${annotation}`);
+  const risk = risks.find((r) => r.role === role && r.op === op);
+  if (risk) {
+    out.push(`-- WARNING: ${risk.message}`);
   }
 
-  out.push(`-- ${role} can ${opUpper}`);
   out.push(`CREATE POLICY "${policyName}" ON ${tableName}`);
   out.push(`  FOR ${opUpper} TO ${targetRole}`);
 
+  const scoped = role === "owner";
+  const predicate = scoped ? predicateLines(check, "    ") : null;
+
+  // INSERT is validated on the incoming row, so it only takes WITH CHECK.
+  // UPDATE is validated on both the existing row and the replacement.
   if (op === "insert") {
-    out.push(`  WITH CHECK (true);`);
+    out.push(...clause("WITH CHECK", predicate, true));
   } else if (op === "update") {
-    out.push(`  USING (true)`);
-    out.push(`  WITH CHECK (true);`);
+    out.push(...clause("USING", predicate, false));
+    out.push(...clause("WITH CHECK", predicate, true));
   } else {
-    out.push(`  USING (true);`);
+    out.push(...clause("USING", predicate, true));
   }
+
   return out;
+}
+
+function clause(
+  keyword: string,
+  predicate: string[] | null,
+  terminal: boolean
+): string[] {
+  const end = terminal ? ";" : "";
+  if (!predicate) return [`  ${keyword} (true)${end}`];
+  if (predicate.length === 1) {
+    return [`  ${keyword} (${predicate[0].trim()})${end}`];
+  }
+  return [`  ${keyword} (`, ...predicate, `  )${end}`];
 }
