@@ -74,13 +74,17 @@ Or push to GitHub and import the repo from [vercel.com/new](https://vercel.com/n
 ```
 rls-policy-generator/
 ├── app/
+│   ├── apple-icon.png
+│   ├── favicon.ico
 │   ├── globals.css
+│   ├── icon.svg
 │   ├── layout.tsx
 │   └── page.tsx
 ├── components/
 │   ├── ui/
 │   │   ├── empty-state.tsx
 │   │   ├── info-popover.tsx
+│   │   ├── logo-mark.tsx
 │   │   ├── panel.tsx
 │   │   └── skeleton.tsx
 │   ├── access-rules.tsx
