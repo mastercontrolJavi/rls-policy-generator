@@ -1,24 +1,80 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AccessRules } from "@/components/access-rules";
+import { CommandPalette } from "@/components/command-palette";
+import { Guide } from "@/components/guide";
 import { Header } from "@/components/header";
+import { Hero } from "@/components/hero";
 import { RowPreview } from "@/components/row-preview";
 import { SchemaBuilder } from "@/components/schema-builder";
 import { SqlOutput } from "@/components/sql-output";
 import { presets } from "@/lib/presets";
-import { detectOwnerColumn, generateSql } from "@/lib/sql-generator";
+import { resolveAccessCheck } from "@/lib/access";
+import { generateSql } from "@/lib/sql-generator";
 import type { AppState } from "@/lib/types";
+import { decodeState, encodeState } from "@/lib/url-state";
+import { errorsOf, isSchemaEmpty, validateSchema } from "@/lib/validation";
+import { PanelSkeleton } from "@/components/ui/skeleton";
 
 const initialState: AppState = presets.blog;
 
 export default function Home() {
   const [state, setState] = useState<AppState>(initialState);
+  const [hydrated, setHydrated] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+        return;
+      }
+      // "?" opens the guide, unless the caret is in a field.
+      const el = document.activeElement;
+      const typing =
+        el instanceof HTMLInputElement ||
+        el instanceof HTMLTextAreaElement ||
+        (el instanceof HTMLElement && el.isContentEditable);
+      if (e.key === "?" && !typing && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setGuideOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // A shared link wins over the default preset. Read after mount so the
+  // statically prerendered markup and the first client render agree.
+  useEffect(() => {
+    const fromUrl = decodeState(window.location.search);
+    if (fromUrl) setState(fromUrl);
+    setHydrated(true);
+  }, []);
+
+  // Mirror state back into the URL. replaceState keeps a session of edits
+  // from filling the back button, and the delay keeps typing off the
+  // browser's history-write rate limit.
+  useEffect(() => {
+    if (!hydrated) return;
+    const timer = window.setTimeout(() => {
+      const { pathname } = window.location;
+      window.history.replaceState(null, "", `${pathname}?${encodeState(state)}`);
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [state, hydrated]);
+
+  const issues = useMemo(() => validateSchema(state.schema), [state.schema]);
+  const errors = useMemo(() => errorsOf(issues), [issues]);
+  const schemaEmpty = useMemo(() => isSchemaEmpty(state.schema), [state.schema]);
 
   const sql = useMemo(() => generateSql(state), [state]);
-  const ownerColumn = useMemo(
-    () => detectOwnerColumn(state.schema.columns),
-    [state.schema.columns]
+  const check = useMemo(
+    () => resolveAccessCheck(state.schema, state.tenancy),
+    [state.schema, state.tenancy]
   );
 
   const handlePreset = (key: string) => {
@@ -33,40 +89,90 @@ export default function Home() {
           authenticated: { ...presets[key].rules.authenticated },
           owner: { ...presets[key].rules.owner },
         },
+        tenancy: { ...presets[key].tenancy },
       });
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b]">
-      <Header onPresetChange={handlePreset} />
+    <div className="relative z-10 min-h-screen">
+      <Header
+        state={state}
+        onPresetChange={handlePreset}
+        onOpenPalette={() => setPaletteOpen(true)}
+        onOpenGuide={() => setGuideOpen(true)}
+      />
+      <Guide open={guideOpen} onOpenChange={setGuideOpen} />
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        state={state}
+        sql={sql}
+        blocked={schemaEmpty || errors.length > 0}
+        onState={setState}
+      />
       <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-6 sm:px-6">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          <section className="lg:col-span-4">
-            <SchemaBuilder
-              schema={state.schema}
-              onChange={(schema) => setState((s) => ({ ...s, schema }))}
-            />
-          </section>
+        <Hero onOpenGuide={() => setGuideOpen(true)} />
 
-          <section className="space-y-4 lg:col-span-3">
-            <AccessRules
-              rules={state.rules}
-              ownerColumn={ownerColumn}
-              onChange={(rules) => setState((s) => ({ ...s, rules }))}
-            />
-            <RowPreview
-              schema={state.schema}
-              rules={state.rules}
-              ownerColumn={ownerColumn}
-            />
-          </section>
+        {!hydrated ? (
+          <ToolSkeleton />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
+            <section className="reveal lg:col-span-4" style={{ ["--i" as string]: 0 }}>
+              <SchemaBuilder
+                schema={state.schema}
+                issues={issues}
+                onChange={(schema) => setState((s) => ({ ...s, schema }))}
+              />
+            </section>
 
-          <section className="lg:col-span-5">
-            <SqlOutput sql={sql} tableName={state.schema.tableName} />
-          </section>
-        </div>
+            <section className="reveal space-y-4 lg:col-span-3" style={{ ["--i" as string]: 1 }}>
+              <AccessRules
+                rules={state.rules}
+                check={check}
+                tenancy={state.tenancy}
+                onChange={(rules) => setState((s) => ({ ...s, rules }))}
+                onTenancyModeChange={(mode) =>
+                  setState((s) => ({ ...s, tenancy: { ...s.tenancy, mode } }))
+                }
+              />
+              <RowPreview
+                schema={state.schema}
+                rules={state.rules}
+                check={check}
+                tenancy={state.tenancy}
+              />
+            </section>
+
+            <section className="reveal lg:sticky lg:top-20 lg:col-span-5" style={{ ["--i" as string]: 2 }}>
+              <SqlOutput
+                sql={sql}
+                tableName={state.schema.tableName}
+                empty={schemaEmpty}
+                errors={errors}
+              />
+            </section>
+          </div>
+        )}
       </main>
+    </div>
+  );
+}
+
+/** Mirrors the real grid so resolving state from the URL does not shift layout. */
+function ToolSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
+      <section className="lg:col-span-4">
+        <PanelSkeleton title="Schema" rows={6} />
+      </section>
+      <section className="space-y-4 lg:col-span-3">
+        <PanelSkeleton title="Access Rules" rows={4} />
+        <PanelSkeleton title="Row Preview" rows={3} />
+      </section>
+      <section className="lg:col-span-5">
+        <PanelSkeleton title="SQL Output" rows={8} />
+      </section>
     </div>
   );
 }
