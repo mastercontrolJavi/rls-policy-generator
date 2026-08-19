@@ -1,16 +1,18 @@
 "use client";
 
-import { Database } from "lucide-react";
+import { Database, Search } from "lucide-react";
 import type { AppState } from "@/lib/types";
+import { PostureBadge } from "./posture-badge";
 import { PresetSelector } from "./preset-selector";
 import { ShareButton } from "./share-button";
 
 interface HeaderProps {
   state: AppState;
   onPresetChange: (key: string) => void;
+  onOpenPalette: () => void;
 }
 
-export function Header({ state, onPresetChange }: HeaderProps) {
+export function Header({ state, onPresetChange, onOpenPalette }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-[#1f1f23] bg-[#0a0a0b]/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
@@ -35,6 +37,16 @@ export function Header({ state, onPresetChange }: HeaderProps) {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <PostureBadge state={state} />
+          <button
+            onClick={onOpenPalette}
+            aria-label="Open command palette"
+            title="Command palette"
+            className="hidden items-center gap-2 rounded-md border border-[#1f1f23] bg-[#111114] px-2.5 py-2 text-zinc-500 transition hover:border-[#2c2c34] hover:text-zinc-300 sm:flex"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <kbd className="font-mono text-[10px] tracking-tight">⌘K</kbd>
+          </button>
           <ShareButton state={state} />
           <PresetSelector onSelect={onPresetChange} />
         </div>

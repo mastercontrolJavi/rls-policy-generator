@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Check, Copy, Download, FileCode2, X } from "lucide-react";
+import { addedLineIndices } from "@/lib/diff";
 import { tokenize } from "@/lib/syntax-highlighter";
 import type { Issue } from "@/lib/validation";
 import { cn } from "@/lib/utils";
@@ -20,7 +21,9 @@ type CopyStatus = "idle" | "copied" | "failed";
 export function SqlOutput({ sql, tableName, empty, errors }: Props) {
   const [copied, setCopied] = useState<CopyStatus>("idle");
   const blocked = empty || errors.length > 0;
-  const lineCount = sql.split("\n").length;
+  const lines = sql.split("\n");
+  const lineCount = lines.length;
+  const flashed = useChangedLines(sql, blocked);
 
   const handleCopy = async () => {
     try {
@@ -107,13 +110,13 @@ export function SqlOutput({ sql, tableName, empty, errors }: Props) {
               {lineCount} {lineCount === 1 ? "line" : "lines"}
             </span>
           </div>
-          <div className="scrollbar-thin max-h-[calc(100vh-11.5rem)] overflow-auto bg-[#070709] p-4">
-            <HighlightedSql sql={sql} />
+          <div className="scrollbar-thin max-h-[calc(100vh-11.5rem)] overflow-auto bg-[#070709] py-3">
+            <HighlightedSql lines={lines} flashed={flashed} />
           </div>
           {/* Light pooling at the top of the well. */}
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-7 h-16 bg-gradient-to-b from-[#3ECF8E]/[0.045] to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-7 h-16 bg-gradient-to-b from-[#3ECF8E]/[0.05] to-transparent"
           />
         </div>
       )}
@@ -155,21 +158,71 @@ function SqlErrors({ errors }: { errors: Issue[] }) {
   );
 }
 
-function HighlightedSql({ sql }: { sql: string }) {
-  const tokens = tokenize(sql);
+/**
+ * Tracks which lines are new since the last edit, so a toggle shows you
+ * exactly which policy it just added. Skips the first run, otherwise the
+ * whole document flashes on load.
+ */
+function useChangedLines(sql: string, blocked: boolean): Set<number> {
+  const previous = useRef<string[] | null>(null);
+  const [flashed, setFlashed] = useState<Set<number>>(() => new Set());
+
+  useEffect(() => {
+    const next = sql.split("\n");
+    const prior = previous.current;
+    previous.current = blocked ? null : next;
+
+    if (blocked || prior === null) {
+      setFlashed(new Set());
+      return;
+    }
+
+    const added = addedLineIndices(prior, next);
+    if (added.size === 0 || added.size === next.length) return;
+
+    setFlashed(added);
+    const timer = window.setTimeout(() => setFlashed(new Set()), 1600);
+    return () => window.clearTimeout(timer);
+  }, [sql, blocked]);
+
+  return flashed;
+}
+
+function HighlightedSql({
+  lines,
+  flashed,
+}: {
+  lines: string[];
+  flashed: Set<number>;
+}) {
   return (
-    <pre className="whitespace-pre font-mono text-[12.5px] leading-6 text-zinc-300">
-      <code>
-        {tokens.map((t, i) => {
-          const cls = tokenClass(t.type);
-          return cls ? (
-            <span key={i} className={cls}>
-              {t.value}
+    <pre className="font-mono text-[12.5px] leading-6 text-zinc-300">
+      <code className="block">
+        {lines.map((line, i) => (
+          <div
+            key={i}
+            className={cn("flex", flashed.has(i) && "line-flash")}
+          >
+            <span
+              aria-hidden="true"
+              className="sticky left-0 z-10 w-11 shrink-0 select-none bg-[#070709] pr-3.5 text-right text-[11px] tabular-nums text-zinc-700"
+            >
+              {i + 1}
             </span>
-          ) : (
-            <span key={i}>{t.value}</span>
-          );
-        })}
+            <span className="whitespace-pre pr-4">
+              {tokenize(line).map((t, k) => {
+                const cls = tokenClass(t.type);
+                return cls ? (
+                  <span key={k} className={cls}>
+                    {t.value}
+                  </span>
+                ) : (
+                  <span key={k}>{t.value}</span>
+                );
+              })}
+            </span>
+          </div>
+        ))}
       </code>
     </pre>
   );

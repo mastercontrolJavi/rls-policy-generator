@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AccessRules } from "@/components/access-rules";
+import { CommandPalette } from "@/components/command-palette";
 import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
 import { RowPreview } from "@/components/row-preview";
@@ -20,6 +21,18 @@ const initialState: AppState = presets.blog;
 export default function Home() {
   const [state, setState] = useState<AppState>(initialState);
   const [hydrated, setHydrated] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // A shared link wins over the default preset. Read after mount so the
   // statically prerendered markup and the first client render agree.
@@ -70,7 +83,18 @@ export default function Home() {
 
   return (
     <div className="relative z-10 min-h-screen">
-      <Header state={state} onPresetChange={handlePreset} />
+      <Header
+        state={state}
+        onPresetChange={handlePreset}
+        onOpenPalette={() => setPaletteOpen(true)}
+      />
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        state={state}
+        sql={sql}
+        onState={setState}
+      />
       <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-6 sm:px-6">
         <Hero />
 
