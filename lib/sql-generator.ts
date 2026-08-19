@@ -1,4 +1,9 @@
-import { predicateLines, resolveAccessCheck, scopedRoleLabel } from "./access";
+import {
+  missingColumnCandidates,
+  predicateLines,
+  resolveAccessCheck,
+  scopedRoleLabel,
+} from "./access";
 import type { AccessCheck } from "./access";
 import { describePolicy } from "./annotations";
 import { detectRisks } from "./risks";
@@ -15,6 +20,17 @@ export interface GeneratedPolicy {
   annotation: string;
   /** SQL lines for the policy, comments included. */
   lines: string[];
+}
+
+/**
+ * Scoped operations that are switched on but cannot produce a policy because
+ * no column resolves the scope. These would otherwise vanish from the output
+ * with nothing to say so.
+ */
+export function droppedScopedOps(state: AppState): Operation[] {
+  const check = resolveAccessCheck(state.schema, state.tenancy);
+  if (check.kind !== "none") return [];
+  return OPERATIONS.filter((op) => state.rules.owner[op]);
 }
 
 export function generatePolicies(state: AppState): GeneratedPolicy[] {
@@ -77,6 +93,22 @@ export function generateSql(state: AppState): string {
   lines.push(`ALTER TABLE ${tableName} ENABLE ROW LEVEL SECURITY;`);
   lines.push("");
 
+  // Say so before the policies, not instead of them. Enabled rules going
+  // missing from the output is the exact failure this tool exists to catch.
+  const dropped = droppedScopedOps(state);
+  if (dropped.length > 0) {
+    const ops = dropped.map((op) => op.toUpperCase()).join(", ");
+    const candidates = missingColumnCandidates(state.tenancy).join(", ");
+    lines.push(
+      `-- WARNING: ${dropped.length} scoped ${dropped.length === 1 ? "rule" : "rules"} (${ops}) ${dropped.length === 1 ? "is" : "are"} enabled but no`
+    );
+    lines.push(
+      `-- matching column was found on ${tableName}, so nothing was generated for ${dropped.length === 1 ? "it" : "them"}.`
+    );
+    lines.push(`-- Add one of: ${candidates}`);
+    lines.push("");
+  }
+
   for (const policy of policies) {
     lines.push(...policy.lines);
     lines.push("");
@@ -84,11 +116,6 @@ export function generateSql(state: AppState): string {
 
   if (policies.length === 0) {
     lines.push("-- No policies enabled. Toggle access rules to generate them.");
-    if (check.kind === "none" && hasScopedRuleEnabled(state)) {
-      lines.push(
-        `-- The scoped role is on but no matching column was found on ${tableName}.`
-      );
-    }
   }
 
   return lines.join("\n");
@@ -96,10 +123,6 @@ export function generateSql(state: AppState): string {
 
 function tableNameOf(state: AppState): string {
   return (state.schema.tableName || "my_table").trim();
-}
-
-function hasScopedRuleEnabled(state: AppState): boolean {
-  return OPERATIONS.some((op) => state.rules.owner[op]);
 }
 
 function renderPolicy(

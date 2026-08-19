@@ -12,6 +12,7 @@ import {
   OPERATIONS,
   ROLES,
 } from "./types";
+import { isSafeIdentifier } from "./validation";
 
 /**
  * State travels in the query string so a configured policy is a link.
@@ -141,16 +142,29 @@ function parseRules(raw: string): AppState["rules"] {
   return rules;
 }
 
+/**
+ * Tenancy names are interpolated straight into generated SQL, so a hand
+ * crafted link must not be able to smuggle anything through them. Anything
+ * that is not a bare identifier falls back to the default.
+ */
+function identifierParam(raw: string | undefined, fallback: string): string {
+  const value = dec(raw ?? "");
+  return isSafeIdentifier(value) ? value : fallback;
+}
+
 function parseTenancy(params: Record<string, string>): Tenancy {
   const mode = dec(params.m ?? "") === "org" ? "org" : "owner";
   return {
     mode,
-    membershipTable:
-      dec(params.mt ?? "") || DEFAULT_TENANCY.membershipTable,
-    membershipUserColumn:
-      dec(params.mu ?? "") || DEFAULT_TENANCY.membershipUserColumn,
-    membershipOrgColumn:
-      dec(params.mo ?? "") || DEFAULT_TENANCY.membershipOrgColumn,
+    membershipTable: identifierParam(params.mt, DEFAULT_TENANCY.membershipTable),
+    membershipUserColumn: identifierParam(
+      params.mu,
+      DEFAULT_TENANCY.membershipUserColumn
+    ),
+    membershipOrgColumn: identifierParam(
+      params.mo,
+      DEFAULT_TENANCY.membershipOrgColumn
+    ),
   };
 }
 

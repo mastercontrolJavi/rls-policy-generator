@@ -1,4 +1,6 @@
 import type { Column, Schema, Tenancy } from "./types";
+import { DEFAULT_TENANCY } from "./types";
+import { isSafeIdentifier } from "./validation";
 
 export const OWNER_CANDIDATES = ["user_id", "owner_id", "created_by"];
 export const ORG_CANDIDATES = [
@@ -34,14 +36,26 @@ export function detectOrgColumn(columns: Column[]): string | null {
   return findColumn(columns, ORG_CANDIDATES);
 }
 
+function safeName(value: string, fallback: string): string {
+  return isSafeIdentifier(value) ? value : fallback;
+}
+
 export function resolveAccessCheck(
   schema: Schema,
   tenancy: Tenancy
 ): AccessCheck {
+  // Everything below is interpolated into SQL, so refuse anything that is
+  // not a bare identifier no matter how it reached state.
   const membership = {
-    membershipTable: tenancy.membershipTable,
-    membershipUserColumn: tenancy.membershipUserColumn,
-    membershipOrgColumn: tenancy.membershipOrgColumn,
+    membershipTable: safeName(tenancy.membershipTable, DEFAULT_TENANCY.membershipTable),
+    membershipUserColumn: safeName(
+      tenancy.membershipUserColumn,
+      DEFAULT_TENANCY.membershipUserColumn
+    ),
+    membershipOrgColumn: safeName(
+      tenancy.membershipOrgColumn,
+      DEFAULT_TENANCY.membershipOrgColumn
+    ),
   };
 
   if (tenancy.mode === "org") {

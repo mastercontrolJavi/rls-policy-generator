@@ -25,7 +25,7 @@ const OWNED: Record<Operation, (t: string, c: string) => string> = {
 const ORG_SCOPED: Record<Operation, (t: string, c: string, m: string) => string> = {
   select: (t, c, m) => `A signed in user can read a row in ${t} only when its ${c} is an org they belong to in ${m}.`,
   insert: (t, c, m) => `A signed in user can create a row in ${t} only when they set ${c} to an org they belong to in ${m}.`,
-  update: (t, c, m) => `A signed in user can change a row in ${t} only when its ${c} is an org they belong to in ${m}, and cannot move the row to another org.`,
+  update: (t, c, m) => `A signed in user can change a row in ${t} only when its ${c} is an org they belong to in ${m}, and can move it to any other org they also belong to.`,
   delete: (t, c, m) => `A signed in user can delete a row in ${t} only when its ${c} is an org they belong to in ${m}.`,
 };
 

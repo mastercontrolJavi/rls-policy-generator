@@ -22,6 +22,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   state: AppState;
   sql: string;
+  /** True when SqlOutput is withholding generation, so exports stay hidden here too. */
+  blocked: boolean;
   onState: (next: AppState) => void;
 }
 
@@ -36,6 +38,7 @@ export function CommandPalette({
   onOpenChange,
   state,
   sql,
+  blocked,
   onState,
 }: Props) {
   const [query, setQuery] = useState("");
@@ -107,14 +110,38 @@ export function CommandPalette({
       });
     }
 
+    // Exporting SQL the panel refuses to hand over would defeat the point of
+    // withholding it, so these two disappear under the same condition.
+    if (!blocked) {
+      out.push(
+        {
+          id: "action:copy-sql",
+          group: "Actions",
+          label: "Copy SQL",
+          keywords: "copy sql clipboard output",
+          run: () => void navigator.clipboard.writeText(sql).catch(() => {}),
+        },
+        {
+          id: "action:download",
+          group: "Actions",
+          label: "Download .sql",
+          keywords: "download save file sql",
+          run: () => {
+            const blob = new Blob([sql], { type: "text/sql" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${state.schema.tableName || "policies"}.sql`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          },
+        }
+      );
+    }
+
     out.push(
-      {
-        id: "action:copy-sql",
-        group: "Actions",
-        label: "Copy SQL",
-        keywords: "copy sql clipboard output",
-        run: () => void navigator.clipboard.writeText(sql).catch(() => {}),
-      },
       {
         id: "action:copy-link",
         group: "Actions",
@@ -125,23 +152,6 @@ export function CommandPalette({
           void navigator.clipboard
             .writeText(`${origin}${pathname}?${encodeState(state)}`)
             .catch(() => {});
-        },
-      },
-      {
-        id: "action:download",
-        group: "Actions",
-        label: "Download .sql",
-        keywords: "download save file sql",
-        run: () => {
-          const blob = new Blob([sql], { type: "text/sql" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${state.schema.tableName || "policies"}.sql`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
         },
       },
       {
@@ -180,7 +190,7 @@ export function CommandPalette({
     );
 
     return out;
-  }, [state, sql, onState]);
+  }, [state, sql, blocked, onState]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

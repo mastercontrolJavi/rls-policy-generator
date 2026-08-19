@@ -1,5 +1,5 @@
 import { detectRisks } from "./risks";
-import { generatePolicies } from "./sql-generator";
+import { droppedScopedOps, generatePolicies } from "./sql-generator";
 import type { AppState } from "./types";
 import { errorsOf, isSchemaEmpty, validateSchema } from "./validation";
 
@@ -31,7 +31,10 @@ export function assessPosture(state: AppState): Posture {
   }
 
   const policies = generatePolicies(state).length;
-  const warnings = detectRisks(state.rules).length;
+  // Enabled scoped rules that generated nothing count as a warning, so the
+  // chip cannot read healthy while access rules are being dropped.
+  const dropped = droppedScopedOps(state).length > 0 ? 1 : 0;
+  const warnings = detectRisks(state.rules).length + dropped;
 
   if (policies === 0) {
     return { level: "warn", policies: 0, warnings, errors: 0, label: "no policies" };
