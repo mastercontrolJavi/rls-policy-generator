@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Check, Copy, Download, FileCode2, X } from "lucide-react";
 import { addedLineIndices } from "@/lib/diff";
+import { PANEL_HELP } from "@/lib/help";
 import { tokenize } from "@/lib/syntax-highlighter";
 import type { Issue } from "@/lib/validation";
 import { cn } from "@/lib/utils";
@@ -58,6 +59,7 @@ export function SqlOutput({ sql, tableName, empty, errors }: Props) {
     <Panel
       title="SQL Output"
       subtitle={subtitle}
+      help={PANEL_HELP.sql}
       primary={!blocked}
       action={
         blocked ? null : (

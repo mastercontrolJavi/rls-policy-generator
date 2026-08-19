@@ -1,4 +1,6 @@
+import type { Explainer } from "@/lib/help";
 import { cn } from "@/lib/utils";
+import { InfoPopover } from "./info-popover";
 
 interface PanelProps {
   title: string;
@@ -8,6 +10,8 @@ interface PanelProps {
   className?: string;
   /** Lights the header rule in the accent, marking the panel that pays off. */
   primary?: boolean;
+  /** Explains what the panel is for, shown behind a help icon in the header. */
+  help?: Explainer;
 }
 
 export function Panel({
@@ -17,6 +21,7 @@ export function Panel({
   children,
   className,
   primary = false,
+  help,
 }: PanelProps) {
   return (
     <div
@@ -30,6 +35,7 @@ export function Panel({
           <h2 className="font-mono text-[10.5px] font-medium uppercase tracking-[0.18em] text-zinc-300">
             {title}
           </h2>
+          {help && <InfoPopover explainer={help} className="self-center" />}
           {subtitle && (
             <span className="truncate text-[11px] text-zinc-600">
               {subtitle}

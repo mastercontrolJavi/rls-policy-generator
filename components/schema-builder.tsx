@@ -1,5 +1,6 @@
 "use client";
 
+import { PANEL_HELP } from "@/lib/help";
 import { AlertTriangle, Plus, Table2, Trash2 } from "lucide-react";
 import type { Column, ColumnType, Schema } from "@/lib/types";
 import { COLUMN_TYPES } from "@/lib/types";
@@ -60,7 +61,7 @@ export function SchemaBuilder({ schema, issues, onChange }: Props) {
 
   if (empty) {
     return (
-      <Panel title="Schema" subtitle="Table structure">
+      <Panel title="Schema" subtitle="Table structure" help={PANEL_HELP.schema}>
         <EmptyState
           icon={<Table2 className="h-4 w-4" />}
           title="No table yet"
@@ -80,7 +81,7 @@ export function SchemaBuilder({ schema, issues, onChange }: Props) {
   }
 
   return (
-    <Panel title="Schema" subtitle="Table structure">
+    <Panel title="Schema" subtitle="Table structure" help={PANEL_HELP.schema}>
       <div className="space-y-4 p-4">
         <div>
           <label

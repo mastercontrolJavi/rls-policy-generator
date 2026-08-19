@@ -3,10 +3,12 @@
 import { AlertTriangle, Info } from "lucide-react";
 import type { AccessCheck } from "@/lib/access";
 import { missingColumnCandidates, predicateSummary, scopedRoleLabel } from "@/lib/access";
+import { MEMBER_HELP, OP_HELP, PANEL_HELP, ROLE_HELP, SCOPE_HELP } from "@/lib/help";
 import { detectRisks, isRisky, roleRisks } from "@/lib/risks";
 import type { AccessRules as AccessRulesType, Operation, Role, Tenancy } from "@/lib/types";
 import { OPERATIONS, ROLES } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { InfoPopover } from "./ui/info-popover";
 import { Panel } from "./ui/panel";
 
 interface Props {
@@ -16,12 +18,6 @@ interface Props {
   onChange: (rules: AccessRulesType) => void;
   onTenancyModeChange: (mode: Tenancy["mode"]) => void;
 }
-
-const ROLE_HINTS: Record<Role, string> = {
-  anon: "Public, unauthenticated visitors",
-  authenticated: "Any signed-in user",
-  owner: "Callers who pass the row scope check below",
-};
 
 const OP_LABELS: Record<Operation, string> = {
   select: "S",
@@ -53,13 +49,21 @@ export function AccessRules({
   };
 
   return (
-    <Panel title="Access Rules" subtitle="Who can do what">
+    <Panel title="Access Rules" subtitle="Who can do what" help={PANEL_HELP.access}>
       <div className="p-4">
         <div className="mb-2 grid grid-cols-[76px_repeat(4,1fr)] gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-zinc-600">
           <div></div>
           {OPERATIONS.map((op) => (
-            <div key={op} className="text-center" title={op}>
-              {op.slice(0, 3)}
+            <div key={op} className="flex items-center justify-center gap-0.5">
+              <InfoPopover
+                explainer={OP_HELP[op]}
+                label={`What does ${op.toUpperCase()} do?`}
+                className="text-zinc-600 hover:text-[#3ECF8E]"
+              >
+                <span className="underline decoration-dotted decoration-from-font underline-offset-2">
+                  {op.slice(0, 3)}
+                </span>
+              </InfoPopover>
             </div>
           ))}
         </div>
@@ -74,18 +78,23 @@ export function AccessRules({
                 className="grid grid-cols-[76px_repeat(4,1fr)] items-center gap-1.5"
               >
                 <div className="flex min-w-0 items-center gap-1">
-                  <span className="truncate font-mono text-xs text-zinc-300">
-                    {roleLabel(role)}
-                  </span>
-                  {flagged ? (
+                  <InfoPopover
+                    explainer={
+                      role === "owner" && tenancy.mode === "org"
+                        ? MEMBER_HELP
+                        : ROLE_HELP[role]
+                    }
+                    label={`What is the ${roleLabel(role)} role?`}
+                    className="min-w-0 text-zinc-300 hover:text-[#3ECF8E]"
+                  >
+                    <span className="truncate font-mono text-xs underline decoration-dotted decoration-from-font underline-offset-2">
+                      {roleLabel(role)}
+                    </span>
+                  </InfoPopover>
+                  {flagged && (
                     <AlertTriangle
                       className="h-3 w-3 shrink-0 text-amber-400"
                       aria-label={`${roleLabel(role)} has an unscoped write`}
-                    />
-                  ) : (
-                    <Info
-                      className="h-2.5 w-2.5 shrink-0 text-zinc-700"
-                      aria-hidden="true"
                     />
                   )}
                 </div>
@@ -121,8 +130,11 @@ export function AccessRules({
 
         <div className="sunken mt-3 space-y-2 rounded-lg border border-[#1f1f23] p-2.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-zinc-600">
-              Row scope
+            <span className="flex items-center gap-1.5">
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-zinc-600">
+                Row scope
+              </span>
+              <InfoPopover explainer={SCOPE_HELP} />
             </span>
             <div className="flex items-center gap-1">
               <ScopeButton

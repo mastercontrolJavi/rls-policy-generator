@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { ArrowRight, ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "rls-generator:howto-dismissed";
@@ -9,19 +9,23 @@ const STORAGE_KEY = "rls-generator:howto-dismissed";
 const STEPS = [
   {
     title: "Define your table",
-    body: "Name the table and add the columns you actually store.",
+    body: "Name the table and list its columns. Include a user_id or org_id so rows can be tied to whoever owns them.",
   },
   {
     title: "Set who can do what",
-    body: "Toggle SELECT, INSERT, UPDATE and DELETE for anon, auth and owner.",
+    body: "Turn on the operations each role should have. Anything left off is denied, and anything risky turns amber as you go.",
   },
   {
-    title: "Copy the generated SQL",
-    body: "Read the preview, then paste it into the Supabase SQL editor.",
+    title: "Read what it permits",
+    body: "Every policy gets a plain English sentence above it. Row Preview shows the same rules applied to real sample rows.",
+  },
+  {
+    title: "Run it in Supabase",
+    body: "Copy the SQL, open SQL Editor in your project, paste and run. Delete the CREATE TABLE block if the table already exists.",
   },
 ];
 
-export function Hero() {
+export function Hero({ onOpenGuide }: { onOpenGuide: () => void }) {
   const [hydrated, setHydrated] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -65,7 +69,14 @@ export function Hero() {
         .
       </h2>
       <p className="mt-2 max-w-[52ch] text-[13px] leading-relaxed text-zinc-500">
-        This makes both visible before you ship.
+        This makes both visible before you ship.{" "}
+        <button
+          onClick={onOpenGuide}
+          className="inline-flex items-center gap-1 text-[#3ECF8E] underline decoration-[#3ECF8E]/30 underline-offset-2 transition hover:decoration-[#3ECF8E]"
+        >
+          New to RLS? Start here
+          <ArrowRight className="h-3 w-3" />
+        </button>
       </p>
 
       {hydrated && !dismissed && (
@@ -87,7 +98,7 @@ export function Hero() {
                 How to use
               </span>
               <span className="truncate font-mono text-[10px] text-zinc-600">
-                3 steps
+                {STEPS.length} steps
               </span>
             </button>
             <button
@@ -103,7 +114,7 @@ export function Hero() {
           {expanded && (
             <ol
               id="howto-steps"
-              className="grid gap-2 border-t border-[#1f1f23] p-3 sm:grid-cols-3"
+              className="grid gap-2 border-t border-[#1f1f23] p-3 sm:grid-cols-2 lg:grid-cols-4"
             >
               {STEPS.map((step, i) => (
                 <li
