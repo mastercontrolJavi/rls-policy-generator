@@ -1,10 +1,11 @@
 "use client";
 
-import { BookOpen, Database, Search } from "lucide-react";
+import { BookOpen, Search } from "lucide-react";
 import type { AppState } from "@/lib/types";
 import { PostureBadge } from "./posture-badge";
 import { PresetSelector } from "./preset-selector";
 import { ShareButton } from "./share-button";
+import { LogoMark } from "./ui/logo-mark";
 
 interface HeaderProps {
   state: AppState;
@@ -24,7 +25,7 @@ export function Header({
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#3ECF8E]/25 bg-[#3ECF8E]/[0.08]">
-            <Database className="h-4 w-4 text-[#3ECF8E]" />
+            <LogoMark className="h-[18px] w-[18px] text-[#3ECF8E]" />
             <span
               aria-hidden="true"
               className="flare absolute -inset-1 -z-10 rounded-lg bg-[#3ECF8E]/20 blur-md"
