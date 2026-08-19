@@ -11,6 +11,7 @@ import {
 } from "@/lib/sample-data";
 import type { AccessRules, Operation, Role, Schema, Tenancy } from "@/lib/types";
 import { OPERATIONS, ROLES } from "@/lib/types";
+import { PANEL_HELP } from "@/lib/help";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "./ui/empty-state";
 import { Panel } from "./ui/panel";
@@ -58,7 +59,7 @@ export function RowPreview({ schema, rules, check, tenancy }: Props) {
 
   if (schema.columns.length === 0) {
     return (
-      <Panel title="Row Preview" subtitle="Visual access map">
+      <Panel title="Row Preview" subtitle="Visual access map" help={PANEL_HELP.preview}>
         <EmptyState
           icon={<Rows3 className="h-4 w-4" />}
           title="No rows to simulate"
@@ -76,7 +77,7 @@ export function RowPreview({ schema, rules, check, tenancy }: Props) {
       : `auth.uid() = ${SIM_USER_DISPLAY}`;
 
   return (
-    <Panel title="Row Preview" subtitle="Visual access map">
+    <Panel title="Row Preview" subtitle="Visual access map" help={PANEL_HELP.preview}>
       <div className="p-4">
         <div className="mb-3 text-[11px] text-zinc-500">
           Simulating{" "}

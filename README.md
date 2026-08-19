@@ -31,6 +31,8 @@ There is a longer write-up of the design decisions in [CASE_STUDY.md](./CASE_STU
 - **Live SQL output**, syntax-highlighted, with line numbers, copy and download
 - **Diff highlighting** flashing exactly the lines a toggle just changed
 - **Command palette** on `⌘K` covering presets, every toggle, row scope and the copy, download and schema actions
+- **Built-in guide** on `?` explaining RLS from scratch: what it is, why mistakes are silent, the roles, the operations, `USING` vs `WITH CHECK`, org scoping, how to run the output, and a pre-ship checklist
+- **In-context help** on every role, operation, panel and the row scope, so you can learn the concept without leaving what you are doing
 - **Shareable links** encoding the full schema and toggle state in the URL, with no backend
 - **Preset templates** for Blog, SaaS, Ecommerce, Public Read-Only, Private Notes and Multi-Tenant SaaS
 
@@ -78,10 +80,12 @@ rls-policy-generator/
 ├── components/
 │   ├── ui/
 │   │   ├── empty-state.tsx
+│   │   ├── info-popover.tsx
 │   │   ├── panel.tsx
 │   │   └── skeleton.tsx
 │   ├── access-rules.tsx
 │   ├── command-palette.tsx
+│   ├── guide.tsx
 │   ├── header.tsx
 │   ├── hero.tsx
 │   ├── posture-badge.tsx
@@ -94,6 +98,7 @@ rls-policy-generator/
 │   ├── access.ts
 │   ├── annotations.ts
 │   ├── diff.ts
+│   ├── help.ts
 │   ├── posture.ts
 │   ├── presets.ts
 │   ├── risks.ts

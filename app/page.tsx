@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AccessRules } from "@/components/access-rules";
 import { CommandPalette } from "@/components/command-palette";
+import { Guide } from "@/components/guide";
 import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
 import { RowPreview } from "@/components/row-preview";
@@ -22,12 +23,24 @@ export default function Home() {
   const [state, setState] = useState<AppState>(initialState);
   const [hydrated, setHydrated] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPaletteOpen((v) => !v);
+        return;
+      }
+      // "?" opens the guide, unless the caret is in a field.
+      const el = document.activeElement;
+      const typing =
+        el instanceof HTMLInputElement ||
+        el instanceof HTMLTextAreaElement ||
+        (el instanceof HTMLElement && el.isContentEditable);
+      if (e.key === "?" && !typing && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setGuideOpen((v) => !v);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -87,7 +100,9 @@ export default function Home() {
         state={state}
         onPresetChange={handlePreset}
         onOpenPalette={() => setPaletteOpen(true)}
+        onOpenGuide={() => setGuideOpen(true)}
       />
+      <Guide open={guideOpen} onOpenChange={setGuideOpen} />
       <CommandPalette
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
@@ -97,7 +112,7 @@ export default function Home() {
         onState={setState}
       />
       <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-6 sm:px-6">
-        <Hero />
+        <Hero onOpenGuide={() => setGuideOpen(true)} />
 
         {!hydrated ? (
           <ToolSkeleton />

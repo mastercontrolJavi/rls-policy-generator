@@ -1,6 +1,6 @@
 "use client";
 
-import { Database, Search } from "lucide-react";
+import { BookOpen, Database, Search } from "lucide-react";
 import type { AppState } from "@/lib/types";
 import { PostureBadge } from "./posture-badge";
 import { PresetSelector } from "./preset-selector";
@@ -10,9 +10,15 @@ interface HeaderProps {
   state: AppState;
   onPresetChange: (key: string) => void;
   onOpenPalette: () => void;
+  onOpenGuide: () => void;
 }
 
-export function Header({ state, onPresetChange, onOpenPalette }: HeaderProps) {
+export function Header({
+  state,
+  onPresetChange,
+  onOpenPalette,
+  onOpenGuide,
+}: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-[#1f1f23] bg-[#0a0a0b]/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
@@ -38,6 +44,15 @@ export function Header({ state, onPresetChange, onOpenPalette }: HeaderProps) {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <PostureBadge state={state} />
+          <button
+            onClick={onOpenGuide}
+            aria-label="Open the guide to Row Level Security"
+            title="Guide (press ?)"
+            className="flex items-center gap-1.5 rounded-md border border-[#1f1f23] bg-[#111114] px-2.5 py-2 text-xs text-zinc-400 transition hover:border-[#3ECF8E]/35 hover:text-[#3ECF8E]"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Guide</span>
+          </button>
           <button
             onClick={onOpenPalette}
             aria-label="Open command palette"
