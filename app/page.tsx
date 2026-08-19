@@ -93,6 +93,7 @@ export default function Home() {
         onOpenChange={setPaletteOpen}
         state={state}
         sql={sql}
+        blocked={schemaEmpty || errors.length > 0}
         onState={setState}
       />
       <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-6 sm:px-6">

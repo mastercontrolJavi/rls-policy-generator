@@ -24,6 +24,20 @@ const RESERVED = new Set([
 const MAX_LENGTH = 63;
 const VALID_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_$]*$/;
 
+/**
+ * Whether a name can be dropped into generated SQL unquoted and unescaped.
+ * Anything reaching the generator from an untrusted source, such as a share
+ * link, has to clear this before it is interpolated.
+ */
+export function isSafeIdentifier(name: string): boolean {
+  return (
+    name.length > 0 &&
+    name.length <= MAX_LENGTH &&
+    VALID_IDENTIFIER.test(name) &&
+    !RESERVED.has(name.toLowerCase())
+  );
+}
+
 export type IssueLevel = "error" | "warning";
 
 export interface Issue {
