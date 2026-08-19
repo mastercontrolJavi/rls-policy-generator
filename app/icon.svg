@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>RLS Policy Generator</title>
+  <rect width="32" height="32" rx="7" fill="#3ECF8E"/>
+  <g fill="#08120d">
+    <rect x="6.5" y="7.5" width="19" height="5" rx="2.2"/>
+    <rect x="6.5" y="20.5" width="19" height="5" rx="2.2"/>
+    <rect x="6.5" y="14" width="19" height="5" rx="2.2"/>
+  </g>
+  <circle cx="16" cy="16.5" r="2.6" fill="#3ECF8E"/>
+</svg>
