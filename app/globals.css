@@ -52,20 +52,7 @@ body {
   background-repeat: no-repeat;
 }
 
-/* Engineering grid, faded out before it reaches the content. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.017) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.017) 1px, transparent 1px);
-  background-size: 60px 60px;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 55%);
-  mask-image: linear-gradient(to bottom, #000 0%, transparent 55%);
-}
+/* The engineering grid is now a canvas layer: components/background.tsx */
 
 /* Grain. Takes the flatness off every gradient on the page. */
 body::after {
